@@ -425,7 +425,7 @@ let servers=[],sel=null,dt=null,allSrv=[],filteredSrv=[];
  * Deploy the worker:  npx wrangler deploy   (see README for setup)
  * Then paste your URL below, e.g. 'https://speedtest-faker-proxy.yourname.workers.dev'
  */
-const WORKER_URL = 'https://speedtest-faker.deadboy18.workers.dev';
+const WORKER_URL = '';
 
 let mode = 'direct'; // 'local' | 'worker' | 'direct'
 
@@ -632,12 +632,59 @@ function md5hex(str){
   return hex(a0)+hex(b0)+hex(c0)+hex(d0);
 }
 
-/* ===== GENERATE (works both with server.py AND directly from browser) ===== */
+/* ===== COOLDOWN (online modes only — Ookla rate-limits Worker IPs harder) ===== */
+const COOLDOWN_SEC = 6;
+let cooldownUntil = 0, cooldownInterval = null;
+const spamMsgs = [
+  'Chill, Ookla needs a breather 😮‍💨',
+  'You\'re speedtesting the speedtest 🏎️',
+  'Bro the electrons need time to travel 🐌',
+  'Ookla said "new phone who dis" 📵',
+  'Rate limit any% speedrun WR 🏆',
+  'Even light has a speed limit ⚡',
+  'Patience is a virtue... and a requirement 🧘',
+  'The hamster powering Ookla\'s server needs water 🐹',
+  'Slow down, this isn\'t a real speedtest 😏',
+  'Ctrl+F5 won\'t save you this time 💀',
+];
+let spamIdx = 0;
+
+function startCooldown(){
+  const btn=document.getElementById('gbtn');
+  cooldownUntil=Date.now()+COOLDOWN_SEC*1000;
+  btn.disabled=true;
+  clearInterval(cooldownInterval);
+  cooldownInterval=setInterval(()=>{
+    const left=Math.ceil((cooldownUntil-Date.now())/1000);
+    if(left<=0){
+      clearInterval(cooldownInterval);cooldownInterval=null;
+      btn.disabled=false;btn.textContent='⚡ Generate Fake Speedtest';
+    }else{
+      btn.textContent=`⏳ Wait ${left}s...`;
+    }
+  },250);
+}
+
+function isCoolingDown(){
+  return mode!=='local'&&Date.now()<cooldownUntil;
+}
+
+/* ===== GENERATE ===== */
 async function gen(){
   if(!sel)return;
+
+  // Spam protection (online modes only)
+  if(isCoolingDown()){
+    showToast(spamMsgs[spamIdx%spamMsgs.length],'orange');
+    spamIdx++;
+    return;
+  }
+
   const dl=parseFloat(document.getElementById('iDl').value),ul=parseFloat(document.getElementById('iUl').value),ping=parseInt(document.getElementById('iPing').value);
   const dlL=document.getElementById('iDlL').value||ping,ulL=document.getElementById('iUlL').value||ping;
   const err=document.getElementById('gerr');err.innerHTML='';
+  // Clear previous result when generating a new one
+  document.getElementById('rArea').innerHTML='';
   if(isNaN(dl)||isNaN(ul)||isNaN(ping)){err.innerHTML='<div class="alert alert-e">Fill in download, upload, and ping.</div>';return}
   if(dl<0||dl>10000||ul<0||ul>10000){err.innerHTML='<div class="alert alert-e">Speed must be 0–10,000 Mbps.</div>';return}
 
@@ -647,18 +694,19 @@ async function gen(){
   const btn=document.getElementById('gbtn');btn.disabled=true;btn.textContent='⏳ Generating...';
 
   if(mode==='local'){
-    // Route through server.py proxy
+    // Route through server.py proxy (no cooldown needed)
     try{
       const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({download:dl,upload:ul,ping,server:sel.id,downloadlatency:dlL,uploadlatency:ulL})});
       const d=await r.json();
       if(d.success)showResult(dl,ul,ping,d.result_url,d.image_url);
       else err.innerHTML=`<div class="alert alert-e">Failed: ${esc(d.error||'Unknown')}</div>${d.raw?`<div class="alert alert-w" style="margin-top:6px;font-size:11px;font-family:monospace;word-break:break-all">Raw: ${esc(d.raw)}</div>`:''}`;
     }catch(e){err.innerHTML=`<div class="alert alert-e">Network error: ${esc(e.message)}</div>`}
+    btn.disabled=false;btn.textContent='⚡ Generate Fake Speedtest';
   }else{
-    // Worker proxy or direct — both use client-side hash + URLSearchParams POST
+    // Worker proxy or direct — cooldown after each request
     await genRemote(dl,ul,ping,dlL,ulL,err);
+    startCooldown();
   }
-  btn.disabled=false;btn.textContent='⚡ Generate Fake Speedtest';
 }
 
 async function genRemote(dl,ul,ping,dlL,ulL,errEl){
@@ -682,12 +730,27 @@ async function genRemote(dl,ul,ping,dlL,ulL,errEl){
       body:body.toString()
     });
     const text=await r.text();
+
+    // Detect Ookla error pages (rate limit, server error, etc.)
+    if(text.includes('<html')||text.includes('<!DOCTYPE')){
+      if(text.includes('429')||text.includes('Too Many Requests')){
+        // Extend cooldown on rate limit
+        cooldownUntil=Date.now()+30000;
+        errEl.innerHTML='<div class="alert alert-w">⏳ Rate limited by Ookla — button will unlock in 30s. Chill for a sec.</div>';
+      }else if(text.includes('403')||text.includes('Forbidden')){
+        errEl.innerHTML='<div class="alert alert-e">Ookla blocked the request (403 Forbidden). Try a different server or wait a few minutes.</div>';
+      }else{
+        errEl.innerHTML=`<div class="alert alert-e">Ookla returned an error page instead of a result. Try again in a minute.</div>`;
+      }
+      return;
+    }
+
     const params=Object.fromEntries(new URLSearchParams(text));
     const rid=params.resultid||'';
     if(rid){
       showResult(dl,ul,ping,`https://www.speedtest.net/result/${rid}`,`https://www.speedtest.net/result/${rid}.png`);
     }else{
-      errEl.innerHTML=`<div class="alert alert-e">No result ID returned.</div><div class="alert alert-w" style="margin-top:6px;font-size:11px;font-family:monospace;word-break:break-all">Raw: ${esc(text.slice(0,500))}</div>`;
+      errEl.innerHTML=`<div class="alert alert-e">No result ID returned.</div><div class="alert alert-w" style="margin-top:6px;font-size:11px;font-family:monospace;word-break:break-all">Raw: ${esc(text.slice(0,300))}</div>`;
     }
   }catch(e){
     if(mode==='direct'){

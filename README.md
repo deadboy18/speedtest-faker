@@ -27,7 +27,7 @@ A tool that generates **real speedtest.net result links** with whatever speed va
 **🔗 [Try the live demo →](https://deadboy18.github.io/speedtest-faker/)**
 
 > [!NOTE]
-> The live demo lets you search servers and preview results. For **real link generation**, run the Python backend locally (see below).
+> Works directly in the browser — no Python required. If your browser blocks the Ookla API (CORS), run `python server.py` locally as a fallback.
 
 ---
 
@@ -47,9 +47,13 @@ A tool that generates **real speedtest.net result links** with whatever speed va
 
 ## Quick Start
 
-### Full mode (recommended)
+### Option 1: GitHub Pages (no install)
 
-Run the Python server for complete functionality — server search + real result generation.
+The [live demo](https://deadboy18.github.io/speedtest-faker/) runs entirely in the browser. Server search and result generation both work directly via Ookla's API — no backend needed. Some browsers may block the API (CORS); if so, use Option 2.
+
+### Option 2: Local server (CORS-proof)
+
+Run the Python server for guaranteed functionality — bypasses any browser CORS restrictions.
 
 ```bash
 git clone https://github.com/deadboy18/speedtest-faker.git
@@ -59,13 +63,9 @@ python server.py
 
 Open **http://localhost:8888** — that's it. No pip installs, no dependencies, pure stdlib.
 
-### Static mode (GitHub Pages)
+### Option 3: Just open the HTML
 
-The [live demo](https://deadboy18.github.io/speedtest-faker/) runs entirely in the browser. Server search works directly via Ookla's API. Result generation requires the Python backend.
-
-### Just open the HTML
-
-Double-click `index.html`. Everything except result link generation works offline.
+Double-click `index.html`. Same browser-direct generation as GitHub Pages.
 
 ---
 

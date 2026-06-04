@@ -414,7 +414,20 @@ body.party-mode .hdr h1{animation:rainbow 1.5s linear infinite}
 <canvas id="matrixCanvas"></canvas>
 
 <script>
-let servers=[],sel=null,isLocal=false,dt=null,allSrv=[],filteredSrv=[];
+let servers=[],sel=null,dt=null,allSrv=[],filteredSrv=[];
+
+/*
+ * ===== PROXY CONFIG =====
+ * Set WORKER_URL to your Cloudflare Worker for GitHub Pages to work without CORS issues.
+ * Leave empty to try direct Ookla API calls (may be blocked by CORS in browsers).
+ * Not needed when running server.py locally.
+ *
+ * Deploy the worker:  npx wrangler deploy   (see README for setup)
+ * Then paste your URL below, e.g. 'https://speedtest-faker-proxy.yourname.workers.dev'
+ */
+const WORKER_URL = '';
+
+let mode = 'direct'; // 'local' | 'worker' | 'direct'
 
 /* ===== CONSOLE EASTER EGG GUIDE ===== */
 console.log(
@@ -464,7 +477,35 @@ window.easter=function(){
 };
 
 /* ===== MODE DETECTION ===== */
-(async()=>{try{const r=await fetch('/api/servers?search=test&limit=1');if(r.ok){isLocal=true;const b=document.getElementById('modeBar');b.className='mode-bar mode-local';b.innerHTML='<span>✅</span><span><strong>Server mode</strong> — Full functionality. Search + generate real speedtest.net links.</span>'}}catch(e){}})();
+(async()=>{
+  const bar=document.getElementById('modeBar');
+  // 1. Try local server.py
+  try{
+    const r=await fetch('/api/servers?search=test&limit=1');
+    if(r.ok){
+      mode='local';
+      bar.className='mode-bar mode-local';
+      bar.innerHTML='<span>✅</span><span><strong>Server mode</strong> — Full functionality via <code>server.py</code></span>';
+      return;
+    }
+  }catch(e){}
+  // 2. Try Cloudflare Worker
+  if(WORKER_URL){
+    try{
+      const r=await fetch(WORKER_URL+'/servers?search=test&limit=1');
+      if(r.ok){
+        mode='worker';
+        bar.className='mode-bar mode-local';
+        bar.innerHTML='<span>✅</span><span><strong>Online mode</strong> — Full functionality via proxy</span>';
+        return;
+      }
+    }catch(e){}
+  }
+  // 3. Fallback: direct browser calls
+  mode='direct';
+  bar.className='mode-bar mode-static';
+  bar.innerHTML='<span>🌐</span><span><strong>Browser mode</strong> — may hit CORS limits. <a href="https://github.com/yourusername/speedtest-faker#-online-setup-github-pages" style="color:inherit;text-decoration:underline">Set up a free proxy →</a></span>';
+})();
 
 /* ===== AUTO TIMEZONE ===== */
 (function(){
@@ -510,15 +551,18 @@ async function doSearch(q){
   document.getElementById('serr').innerHTML='';
   document.getElementById('sempty').style.display='none';
   try{
-    let url=isLocal?`/api/servers?search=${encodeURIComponent(q)}&limit=20`
-      :`https://www.speedtest.net/api/js/servers?engine=js&search=${encodeURIComponent(q)}&https_functional=true&limit=20`;
+    const qs=`search=${encodeURIComponent(q)}&limit=20`;
+    let url;
+    if(mode==='local') url=`/api/servers?${qs}`;
+    else if(mode==='worker') url=`${WORKER_URL}/servers?${qs}`;
+    else url=`https://www.speedtest.net/api/js/servers?engine=js&${qs}&https_functional=true`;
     const r=await fetch(url);if(!r.ok)throw new Error(`HTTP ${r.status}`);
     const d=await r.json();servers=Array.isArray(d)?d:[];
     if(!servers.length)document.getElementById('serr').innerHTML='<div class="alert alert-w">No servers found. Try a different search term.</div>';
   }catch(e){
-    document.getElementById('serr').innerHTML=isLocal
-      ?`<div class="alert alert-e">Search failed: ${esc(e.message)}</div>`
-      :'<div class="alert alert-w">Direct API call may be blocked by CORS. Run <code>python server.py</code> locally for the proxy.</div>';
+    document.getElementById('serr').innerHTML=mode==='direct'
+      ?'<div class="alert alert-w">Search blocked by CORS. Set up the <a href="https://github.com/yourusername/speedtest-faker#-online-setup-github-pages" style="color:inherit;text-decoration:underline">free proxy</a> or run <code>python server.py</code> locally.</div>'
+      :`<div class="alert alert-e">Search failed: ${esc(e.message)}</div>`;
     servers=[];
   }
   document.getElementById('sp').className='spin';
@@ -602,7 +646,7 @@ async function gen(){
 
   const btn=document.getElementById('gbtn');btn.disabled=true;btn.textContent='⏳ Generating...';
 
-  if(isLocal){
+  if(mode==='local'){
     // Route through server.py proxy
     try{
       const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({download:dl,upload:ul,ping,server:sel.id,downloadlatency:dlL,uploadlatency:ulL})});
@@ -611,13 +655,13 @@ async function gen(){
       else err.innerHTML=`<div class="alert alert-e">Failed: ${esc(d.error||'Unknown')}</div>${d.raw?`<div class="alert alert-w" style="margin-top:6px;font-size:11px;font-family:monospace;word-break:break-all">Raw: ${esc(d.raw)}</div>`:''}`;
     }catch(e){err.innerHTML=`<div class="alert alert-e">Network error: ${esc(e.message)}</div>`}
   }else{
-    // Direct browser generation (no Python needed)
-    await genDirect(dl,ul,ping,dlL,ulL,err);
+    // Worker proxy or direct — both use client-side hash + URLSearchParams POST
+    await genRemote(dl,ul,ping,dlL,ulL,err);
   }
   btn.disabled=false;btn.textContent='⚡ Generate Fake Speedtest';
 }
 
-async function genDirect(dl,ul,ping,dlL,ulL,errEl){
+async function genRemote(dl,ul,ping,dlL,ulL,errEl){
   const dlRaw=Math.round(dl*1000),ulRaw=Math.round(ul*1000);
   const hash=md5hex(`${ping}-${ulRaw}-${dlRaw}-297aae72`);
   const body=new URLSearchParams({
@@ -627,10 +671,14 @@ async function genDirect(dl,ul,ping,dlL,ulL,errEl){
     ping:ping,hash:hash,download:dlRaw,
     downloadlatency:dlL,uploadlatency:ulL
   });
+  // Pick the endpoint
+  const url=mode==='worker'
+    ?WORKER_URL+'/generate'
+    :'https://www.speedtest.net/api/api.php';
   try{
-    const r=await fetch('https://www.speedtest.net/api/api.php',{
+    const r=await fetch(url,{
       method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded','User-Agent':'Speedtest'},
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
       body:body.toString()
     });
     const text=await r.text();
@@ -642,12 +690,15 @@ async function genDirect(dl,ul,ping,dlL,ulL,errEl){
       errEl.innerHTML=`<div class="alert alert-e">No result ID returned.</div><div class="alert alert-w" style="margin-top:6px;font-size:11px;font-family:monospace;word-break:break-all">Raw: ${esc(text.slice(0,500))}</div>`;
     }
   }catch(e){
-    // CORS or network error — show helpful fallback
-    errEl.innerHTML=`<div class="alert alert-e">Browser blocked the request (CORS). This is normal — Ookla's API doesn't allow cross-origin calls.</div><div class="alert alert-i" style="margin-top:6px">
-      <strong>Two ways to fix this:</strong><br>
-      <span style="opacity:0.85">① Run locally: <code>python server.py</code> → <code>localhost:8888</code> (recommended)</span><br>
-      <span style="opacity:0.85">② Install a CORS browser extension (e.g. "Allow CORS" for Chrome) and reload this page</span>
-    </div>`;
+    if(mode==='direct'){
+      errEl.innerHTML=`<div class="alert alert-e">Blocked by CORS — Ookla's API doesn't allow cross-origin calls from browsers.</div><div class="alert alert-i" style="margin-top:6px">
+        <strong>Fix this (pick one):</strong><br>
+        <span style="opacity:0.85">① <strong>Free proxy (2 min):</strong> deploy the Cloudflare Worker — <a href="https://github.com/yourusername/speedtest-faker#-online-setup-github-pages" style="color:var(--accent)">see setup guide</a></span><br>
+        <span style="opacity:0.85">② <strong>Run locally:</strong> <code>python server.py</code> → <code>localhost:8888</code></span>
+      </div>`;
+    }else{
+      errEl.innerHTML=`<div class="alert alert-e">Proxy error: ${esc(e.message)}</div>`;
+    }
   }
 }
 

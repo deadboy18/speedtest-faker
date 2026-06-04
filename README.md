@@ -40,7 +40,7 @@ Host the UI on GitHub Pages and deploy a free Cloudflare Worker as a CORS proxy.
 
 1. Fork or clone this repo
 2. Go to **Settings → Pages → Source: main branch**
-3. Your site goes live at `https://deadboy18.github.io/speedtest-faker/`
+3. Your site goes live at `https://yourusername.github.io/speedtest-faker/`
 
 **Step 2 — Cloudflare Worker** (free, 100k requests/day)
 

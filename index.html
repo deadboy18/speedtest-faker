@@ -341,6 +341,23 @@ body.party-mode .hdr h1{animation:rainbow 1.5s linear infinite}
 
   <!-- TOOLS -->
   <div id="p_tools" style="display:none">
+    <div class="tool-card" style="border-color:var(--green-border);background:linear-gradient(135deg,var(--card),rgba(69,212,131,0.03))">
+      <h3>🔖 Bookmarklet — Best Way to Use This</h3>
+      <p>Drag this to your bookmarks bar, then click it on <strong>speedtest.net</strong>. Runs same-origin — <strong style="color:var(--green)">no CORS, no rate limits, no proxy needed</strong>.</p>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <a id="bkmkLink" class="cbtn cbtn-p" style="text-decoration:none;cursor:grab;padding:8px 16px;font-size:12px;background:var(--accent);color:#fff;border-color:var(--accent)" draggable="true" title="Drag this to your bookmarks bar!">⚡ Speedtest Faker</a>
+        <button class="cbtn cbtn-s" onclick="navigator.clipboard.writeText(document.getElementById('bkmkLink').href);this.textContent='✓ Copied!';setTimeout(()=>this.textContent='📋 Copy bookmarklet',1200)">📋 Copy bookmarklet</button>
+      </div>
+      <div style="margin-top:10px;padding:8px 10px;background:var(--bg2);border-radius:6px;font-size:11px;color:var(--text3);line-height:1.6">
+        <strong style="color:var(--text2)">How to use:</strong><br>
+        1. Drag the button above to your bookmarks bar<br>
+        2. Go to <a href="https://www.speedtest.net" target="_blank" style="color:var(--accent)">speedtest.net</a><br>
+        3. Click the bookmark → panel appears → set values → generate<br>
+        <span style="color:var(--green)">✓ Uses your IP · ✓ Unlimited · ✓ Works on mobile (copy link instead)</span>
+      </div>
+      <div style="margin-top:6px;font-size:10.5px;color:var(--text3)">Can't drag? Copy the link and create a bookmark manually, pasting it as the URL.</div>
+    </div>
+
     <div class="tool-card">
       <h3>🔗 Speedtest Result Lookup</h3>
       <p>Got a speedtest.net result ID? View it directly:</p>
@@ -504,7 +521,7 @@ window.easter=function(){
   // 3. Fallback: direct browser calls
   mode='direct';
   bar.className='mode-bar mode-static';
-  bar.innerHTML='<span>🌐</span><span><strong>Browser mode</strong> — may hit CORS limits. <a href="https://github.com/yourusername/speedtest-faker#-online-setup-github-pages" style="color:inherit;text-decoration:underline">Set up a free proxy →</a></span>';
+  bar.innerHTML='<span>🌐</span><span><strong>Browser mode</strong> — may hit CORS limits. <a href="https://github.com/deadboy18/speedtest-faker#-online-setup-github-pages" style="color:inherit;text-decoration:underline">Set up a free proxy →</a></span>';
 })();
 
 /* ===== AUTO TIMEZONE ===== */
@@ -561,7 +578,7 @@ async function doSearch(q){
     if(!servers.length)document.getElementById('serr').innerHTML='<div class="alert alert-w">No servers found. Try a different search term.</div>';
   }catch(e){
     document.getElementById('serr').innerHTML=mode==='direct'
-      ?'<div class="alert alert-w">Search blocked by CORS. Set up the <a href="https://github.com/yourusername/speedtest-faker#-online-setup-github-pages" style="color:inherit;text-decoration:underline">free proxy</a> or run <code>python server.py</code> locally.</div>'
+      ?'<div class="alert alert-w">Search blocked by CORS. Set up the <a href="https://github.com/deadboy18/speedtest-faker#-online-setup-github-pages" style="color:inherit;text-decoration:underline">free proxy</a> or run <code>python server.py</code> locally.</div>'
       :`<div class="alert alert-e">Search failed: ${esc(e.message)}</div>`;
     servers=[];
   }
@@ -756,7 +773,7 @@ async function genRemote(dl,ul,ping,dlL,ulL,errEl){
     if(mode==='direct'){
       errEl.innerHTML=`<div class="alert alert-e">Blocked by CORS — Ookla's API doesn't allow cross-origin calls from browsers.</div><div class="alert alert-i" style="margin-top:6px">
         <strong>Fix this (pick one):</strong><br>
-        <span style="opacity:0.85">① <strong>Free proxy (2 min):</strong> deploy the Cloudflare Worker — <a href="https://github.com/yourusername/speedtest-faker#-online-setup-github-pages" style="color:var(--accent)">see setup guide</a></span><br>
+        <span style="opacity:0.85">① <strong>Free proxy (2 min):</strong> deploy the Cloudflare Worker — <a href="https://github.com/deadboy18/speedtest-faker#-online-setup-github-pages" style="color:var(--accent)">see setup guide</a></span><br>
         <span style="opacity:0.85">② <strong>Run locally:</strong> <code>python server.py</code> → <code>localhost:8888</code></span>
       </div>`;
     }else{
@@ -973,6 +990,16 @@ window.addEventListener('devicemotion',function(e){
   }
   lastX=a.x;lastY=a.y;lastZ=a.z;
 });
+
+/* ===== BOOKMARKLET URL ===== */
+(function(){
+  // Auto-detect base URL from wherever this page is hosted
+  const base=location.origin+location.pathname.replace(/\/[^/]*$/,'/');
+  const scriptUrl=base+'bookmarklet.js';
+  const code=`javascript:void((function(){var s=document.createElement('script');s.src='${scriptUrl}?'+Date.now();document.head.appendChild(s)})())`;
+  const link=document.getElementById('bkmkLink');
+  if(link)link.href=code;
+})();
 
 </script>
 </body>

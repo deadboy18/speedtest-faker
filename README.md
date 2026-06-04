@@ -26,8 +26,58 @@ A tool that generates **real speedtest.net result links** with whatever speed va
 
 **🔗 [Try the live demo →](https://deadboy18.github.io/speedtest-faker/)**
 
-> [!NOTE]
-> Works directly in the browser — no Python required. If your browser blocks the Ookla API (CORS), run `python server.py` locally as a fallback.
+---
+
+## Setup
+
+There are two ways to run this. Both produce the same result — real `speedtest.net/result/XXXXX` links.
+
+### Option A: GitHub Pages + Cloudflare Worker (online, no install)
+
+Host the UI on GitHub Pages and deploy a free Cloudflare Worker as a CORS proxy. Everything runs in the cloud — no Python, no local server.
+
+**Step 1 — GitHub Pages**
+
+1. Fork or clone this repo
+2. Go to **Settings → Pages → Source: main branch**
+3. Your site goes live at `https://deadboy18.github.io/speedtest-faker/`
+
+**Step 2 — Cloudflare Worker** (free, 100k requests/day)
+
+1. Create a [Cloudflare account](https://dash.cloudflare.com/sign-up) (free)
+2. Install Wrangler and deploy:
+   ```bash
+   npx wrangler login
+   npx wrangler deploy
+   ```
+   Or do it manually: **Cloudflare Dashboard → Workers & Pages → Create → "Hello World"** → replace the code with the contents of `worker.js` → **Deploy**
+3. Copy your worker URL (e.g. `https://speedtest-faker-proxy.yourname.workers.dev`)
+
+**Step 3 — Connect them**
+
+Open `index.html` and set the worker URL on this line near the top of the `<script>`:
+
+```javascript
+const WORKER_URL = 'https://speedtest-faker-proxy.yourname.workers.dev';
+```
+
+Commit, push, done. GitHub Pages now has full functionality — search + generate, no Python needed.
+
+### Option B: Local Python server (offline, instant)
+
+Run the Python backend. No accounts, no setup, no dependencies.
+
+```bash
+git clone https://github.com/deadboy18/speedtest-faker.git
+cd speedtest-faker
+python server.py
+```
+
+Open **http://localhost:8888**. That's it. Works on Python 3.6+ with zero pip installs.
+
+### Option C: Just open the HTML
+
+Double-click `index.html`. Server search and generation will attempt to call Ookla's API directly — works in some browsers, may be blocked by CORS in others.
 
 ---
 
@@ -36,36 +86,12 @@ A tool that generates **real speedtest.net result links** with whatever speed va
 - **🔍 Server Search** — Live search Ookla's 15,000+ server database by city, country, or ISP
 - **📊 Speed Tier Badges** — Estimated max speed (10G / 40G / 100G) based on known providers
 - **⚡ Quick Presets** — One-click fills for 1 Gbps, 10 Gbps, Fiber, Cable, 5G, Trash WiFi, and more
-- **🔗 Real Link Generation** — Produces actual `speedtest.net/result/XXXXX` URLs via the Python backend
+- **🔗 Real Link Generation** — Produces actual `speedtest.net/result/XXXXX` URLs
 - **📋 Full Server List** — Browse and filter the complete Ookla server database
-- **🌍 Auto Timezone** — Timestamp info auto-detects your timezone so you know what the result will show
-- **📱 Mobile Friendly** — Responsive card layout, touch-optimized buttons, works on phones
-- **🖼️ Link Previews** — Open Graph meta tags for rich previews when sharing on WhatsApp, Discord, Telegram
+- **🌍 Auto Timezone** — Detects your timezone and shows what the result timestamp will be
+- **📱 Mobile Friendly** — Responsive card layout, touch-optimized buttons
+- **🖼️ Link Previews** — Open Graph tags for rich previews on WhatsApp, Discord, Telegram
 - **🥚 Easter Eggs** — [There are a few...](#-easter-eggs)
-
----
-
-## Quick Start
-
-### Option 1: GitHub Pages (no install)
-
-The [live demo](https://deadboy18.github.io/speedtest-faker/) runs entirely in the browser. Server search and result generation both work directly via Ookla's API — no backend needed. Some browsers may block the API (CORS); if so, use Option 2.
-
-### Option 2: Local server (CORS-proof)
-
-Run the Python server for guaranteed functionality — bypasses any browser CORS restrictions.
-
-```bash
-git clone https://github.com/deadboy18/speedtest-faker.git
-cd speedtest-faker
-python server.py
-```
-
-Open **http://localhost:8888** — that's it. No pip installs, no dependencies, pure stdlib.
-
-### Option 3: Just open the HTML
-
-Double-click `index.html`. Same browser-direct generation as GitHub Pages.
 
 ---
 
@@ -85,8 +111,36 @@ Double-click `index.html`. Same browser-direct generation as GitHub Pages.
    ```
    md5("$ping-$upload-$download-297aae72")
    ```
+   This is computed client-side in JavaScript — no server needed for the math.
 
 4. Ookla returns a `resultid` → maps to a real `speedtest.net/result/XXXXX` URL with a shareable image.
+
+**Why is a proxy needed?** Ookla's API doesn't send CORS headers, so browsers block cross-origin responses. The proxy (either `server.py` or the Cloudflare Worker) forwards the request server-side and adds `Access-Control-Allow-Origin: *` to the response.
+
+---
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Browser (index.html)                                    │
+│  ├── Computes MD5 hash client-side                       │
+│  ├── Detects mode automatically:                         │
+│  │   ├── localhost? → use server.py proxy                │
+│  │   ├── WORKER_URL set? → use Cloudflare Worker proxy   │
+│  │   └── fallback → try Ookla API directly               │
+│  └── Renders results                                     │
+├──────────────────────────────────────────────────────────┤
+│  Proxy (either one)                                      │
+│  ├── server.py (Python, local)                           │
+│  └── worker.js (Cloudflare Worker, cloud)                │
+│      └── Forwards requests to Ookla API + adds CORS      │
+├──────────────────────────────────────────────────────────┤
+│  Ookla API                                               │
+│  ├── /api/js/servers → server search                     │
+│  └── /api/api.php → result generation                    │
+└──────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -136,8 +190,10 @@ The tier badges are heuristic guesses based on the server's sponsor name. Ookla'
 ## Files
 
 ```
-├── index.html      ← The UI (works standalone or hosted)
-├── server.py       ← Python backend for result generation
+├── index.html      ← The UI (GitHub Pages / local / standalone)
+├── server.py       ← Python proxy for local use
+├── worker.js       ← Cloudflare Worker proxy for online use
+├── wrangler.toml   ← Worker deploy config (npx wrangler deploy)
 ├── og-image.png    ← Social preview image (WhatsApp/Discord/Telegram)
 └── README.md
 ```

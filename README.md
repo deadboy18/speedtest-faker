@@ -40,7 +40,7 @@ Host the UI on GitHub Pages and deploy a free Cloudflare Worker as a CORS proxy.
 
 1. Fork or clone this repo
 2. Go to **Settings → Pages → Source: main branch**
-3. Your site goes live at `https://yourusername.github.io/speedtest-faker/`
+3. Your site goes live at `https://deadboy18.github.io/speedtest-faker/`
 
 **Step 2 — Cloudflare Worker** (free, 100k requests/day)
 
@@ -91,6 +91,7 @@ Double-click `index.html`. Server search and generation will attempt to call Ook
 - **🌍 Auto Timezone** — Detects your timezone and shows what the result timestamp will be
 - **📱 Mobile Friendly** — Responsive card layout, touch-optimized buttons
 - **🖼️ Link Previews** — Open Graph tags for rich previews on WhatsApp, Discord, Telegram
+- **🔖 Bookmarklet** — Runs directly on speedtest.net — no CORS, no rate limits, no proxy
 - **🥚 Easter Eggs** — [There are a few...](#-easter-eggs)
 
 ---
@@ -130,6 +131,10 @@ Double-click `index.html`. Server search and generation will attempt to call Ook
 │  │   ├── WORKER_URL set? → use Cloudflare Worker proxy   │
 │  │   └── fallback → try Ookla API directly               │
 │  └── Renders results                                     │
+├──────────────────────────────────────────────────────────┤
+│  Bookmarklet (bookmarklet.js)                            │
+│  └── Injected on speedtest.net → same-origin POST        │
+│      → no proxy needed, no CORS, no rate limits          │
 ├──────────────────────────────────────────────────────────┤
 │  Proxy (either one)                                      │
 │  ├── server.py (Python, local)                           │
@@ -187,14 +192,31 @@ The tier badges are heuristic guesses based on the server's sponsor name. Ookla'
 
 ---
 
+## 🔖 Bookmarklet (easiest method)
+
+The bookmarklet runs **directly on speedtest.net** — same origin, your IP, no CORS, no rate limits, no proxy. This is the best way to use Speedtest Faker.
+
+1. Visit your hosted site (GitHub Pages or localhost)
+2. Go to the **Tools** tab
+3. Drag the **⚡ Speedtest Faker** button to your bookmarks bar
+4. Navigate to [speedtest.net](https://www.speedtest.net)
+5. Click the bookmarklet → a panel appears → set values → generate
+
+The bookmarklet panel is draggable, has all the presets, auto-detects the current server when possible, and works on both desktop and mobile.
+
+> Can't drag? Copy the bookmarklet link and create a bookmark manually, pasting it as the URL.
+
+---
+
 ## Files
 
 ```
-├── index.html      ← The UI (GitHub Pages / local / standalone)
-├── server.py       ← Python proxy for local use
-├── worker.js       ← Cloudflare Worker proxy for online use
-├── wrangler.toml   ← Worker deploy config (npx wrangler deploy)
-├── og-image.png    ← Social preview image (WhatsApp/Discord/Telegram)
+├── index.html        ← The UI (GitHub Pages / local / standalone)
+├── server.py         ← Python proxy for local use
+├── worker.js         ← Cloudflare Worker proxy for online use
+├── wrangler.toml     ← Worker deploy config (npx wrangler deploy)
+├── bookmarklet.js    ← Bookmarklet script (injected on speedtest.net)
+├── og-image.png      ← Social preview image (WhatsApp/Discord/Telegram)
 └── README.md
 ```
 

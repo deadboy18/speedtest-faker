@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speedtest Faker — Server Picker & Generator</title>
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%235b9aff'/%3E%3Cstop offset='100%25' stop-color='%23a78bfa'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='7' fill='%231b1d23'/%3E%3Cpath d='M18.5 4L9 18h6.5L13.5 28 23 14h-6.5z' fill='url(%23g)'/%3E%3C/svg%3E">
+
+<!-- Open Graph / WhatsApp / Discord / Telegram previews -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="⚡ Speedtest Faker — Server Picker & Generator">
+<meta property="og:description" content="Search Ookla servers · See speed tiers · Generate fake speedtest.net results with real links">
+<meta property="og:image" content="og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="⚡ Speedtest Faker">
+<meta name="twitter:description" content="Search Ookla servers · See speed tiers · Generate fake speedtest.net results">
+<meta name="twitter:image" content="og-image.png">
+<meta name="theme-color" content="#1b1d23">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Anybody:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1b1d23;--bg2:#22252c;--card:#272a33;--card2:#2d3039;
+  --border:#353840;--border2:#40444e;
+  --text:#d4d7de;--text2:#9ea3ad;--text3:#6b7080;
+  --accent:#5b9aff;--accent2:#4080e8;--accent-bg:rgba(91,154,255,0.08);--accent-border:rgba(91,154,255,0.18);
+  --green:#45d483;--green-bg:rgba(69,212,131,0.08);--green-border:rgba(69,212,131,0.18);
+  --orange:#f0913a;--orange-bg:rgba(240,145,58,0.08);--orange-border:rgba(240,145,58,0.18);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,0.08);--purple-border:rgba(167,139,250,0.18);
+  --red:#f06060;--red-bg:rgba(240,96,96,0.08);--red-border:rgba(240,96,96,0.18);
+  --pink:#f472b6;
+  --radius:12px;--radius-sm:8px;
+  --shadow:0 2px 8px rgba(0,0,0,0.2);--shadow-lg:0 8px 32px rgba(0,0,0,0.3);
+}
+html{scroll-behavior:smooth}
+body{font-family:'Instrument Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+.container{max-width:860px;margin:0 auto;padding:24px 16px 60px}
+
+/* Header */
+.hdr{text-align:center;margin-bottom:28px}
+.hdr .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:100px;font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:12px}
+.hdr .pill .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.logo-wrap{display:inline-block;cursor:pointer;margin-bottom:8px;-webkit-tap-highlight-color:transparent;user-select:none}
+.logo-wrap svg{transition:transform .2s,filter .2s}
+.logo-wrap:hover svg{transform:scale(1.05);filter:drop-shadow(0 0 12px rgba(91,154,255,0.4))}
+.logo-wrap:active svg{transform:scale(0.97)}
+.hdr h1{font-family:'Anybody',sans-serif;font-size:28px;font-weight:900;color:#fff;letter-spacing:-0.5px;margin-bottom:4px}
+.hdr p{color:var(--text2);font-size:13px}
+
+/* Mode bar */
+.mode-bar{padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;margin-bottom:20px;display:flex;align-items:center;gap:8px;font-weight:500}
+.mode-local{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)}
+.mode-static{background:var(--orange-bg);border:1px solid var(--orange-border);color:var(--orange)}
+.mode-bar code{background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:11px}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:3px;margin-bottom:20px}
+.tab{flex:1;padding:10px 12px;background:transparent;border:1px solid transparent;border-radius:var(--radius-sm);font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text3);cursor:pointer;transition:all .15s}
+.tab:hover{color:var(--text2);background:rgba(255,255,255,0.02)}
+.tab.on{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent)}
+
+/* Search */
+.search-box{position:relative;margin-bottom:16px}
+.search-box svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text3);width:15px;height:15px}
+.search-box input{width:100%;padding:12px 14px 12px 40px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:13.5px;color:var(--text);outline:none;transition:border-color .2s}
+.search-box input:focus{border-color:var(--accent)}
+.search-box input::placeholder{color:var(--text3)}
+.spin{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--accent);display:none}
+.spin.on{display:block}
+
+/* Server cards */
+.srv-count{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:8px;padding:0 2px}
+.srv-list{display:flex;flex-direction:column;gap:5px}
+.srv{display:block;width:100%;text-align:left;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .12s}
+.srv:hover{border-color:var(--border2);background:var(--card2);transform:translateY(-1px)}
+.srv.sel{border-color:var(--accent-border);background:var(--accent-bg)}
+.srv-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.srv-name{font-size:13.5px;font-weight:600;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{display:inline-block;padding:2px 7px;border-radius:100px;font-size:9.5px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
+.b-100g{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+.b-40g{background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border)}
+.b-10g{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+.b-unk{background:rgba(255,255,255,0.04);color:var(--text3);border:1px solid var(--border)}
+.srv-meta{margin-top:4px;font-size:11.5px;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap}
+.srv-host{margin-top:3px;font-size:10.5px;color:var(--text3);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srv-act{font-size:10.5px;color:var(--text3);font-weight:600;white-space:nowrap;padding-top:2px}
+.srv.sel .srv-act{color:var(--accent)}
+
+/* Empty / alerts */
+.empty{text-align:center;padding:40px 16px;color:var(--text3)}
+.empty .ico{font-size:36px;margin-bottom:10px;opacity:.4}
+.empty .t1{font-size:13px;color:var(--text2)}
+.empty .t2{font-size:11.5px;margin-top:4px;color:var(--text3)}
+.alert{padding:10px 14px;border-radius:var(--radius-sm);font-size:12.5px;margin-bottom:14px}
+.alert-w{background:var(--orange-bg);border:1px solid var(--orange-border);color:var(--orange)}
+.alert-e{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red)}
+.alert-i{background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent)}
+
+/* Selected server */
+.sel-srv{padding:14px 16px;background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:var(--radius-sm);margin-bottom:20px}
+.sel-srv .lbl{font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:5px}
+.sel-srv .nm{font-family:'Anybody',sans-serif;font-size:15px;font-weight:700;color:#fff}
+.sel-srv .det{margin-top:4px;font-size:11px;color:var(--text2);font-family:monospace;display:flex;gap:12px;flex-wrap:wrap}
+.btn-sm{padding:5px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:11.5px;color:var(--text2);cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.btn-sm:hover{border-color:var(--accent-border);color:var(--accent)}
+.btn-sm:active{background:var(--accent-bg);transform:scale(0.96)}
+
+/* Inputs */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:16px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;letter-spacing:.3px}
+.field input{width:100%;padding:9px 11px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13.5px;color:var(--text);outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--accent)}
+
+/* Presets */
+.presets-lbl{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:7px}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.preset{padding:5px 12px;background:var(--card);border:1px solid var(--border);border-radius:100px;font-family:inherit;font-size:11.5px;color:var(--text2);cursor:pointer;transition:all .15s}
+.preset:hover{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent)}
+.preset.fun{border-color:var(--purple-border);color:var(--purple);background:var(--purple-bg)}
+.preset.fun:hover{background:rgba(167,139,250,0.15)}
+
+/* Generate button */
+.gen-btn{width:100%;padding:13px 20px;background:var(--accent);border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:14px;font-weight:700;color:#fff;cursor:pointer;transition:all .15s;box-shadow:0 2px 12px rgba(91,154,255,0.2);letter-spacing:.2px}
+.gen-btn:hover{background:var(--accent2);box-shadow:0 4px 20px rgba(91,154,255,0.3);transform:translateY(-1px)}
+.gen-btn:disabled{background:var(--border);color:var(--text3);cursor:not-allowed;box-shadow:none;transform:none}
+
+/* Result */
+.result{margin-top:20px;padding:18px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:var(--radius)}
+.result .lbl{font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{padding:10px;background:var(--card);border-radius:8px;text-align:center;border:1px solid var(--border)}
+.stat .sl{font-size:9.5px;color:var(--text3);margin-bottom:3px}
+.stat .sv{font-family:'Anybody',sans-serif;font-size:22px;font-weight:900}
+.stat .su{font-size:9.5px;color:var(--text3);margin-top:1px}
+.stat-dl .sv{color:var(--accent)}
+.stat-ul .sv{color:var(--purple)}
+.stat-pi .sv{color:var(--green)}
+.rlinks{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+.rlinks .rl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.rlinks a{display:block;color:var(--accent);text-decoration:none;font-size:12.5px;word-break:break-all;margin-bottom:6px}
+.rlinks a:hover{text-decoration:underline}
+.copy-row{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.cbtn{padding:7px 14px;border-radius:6px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid;-webkit-tap-highlight-color:transparent}
+.cbtn-p{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent)}
+.cbtn-p:hover{background:rgba(91,154,255,0.15)}
+.cbtn-s{background:var(--card);border-color:var(--border);color:var(--text2)}
+.cbtn-s:hover{border-color:var(--accent-border);color:var(--accent)}
+.result-img{margin-top:12px;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.result-img img{width:100%;display:block}
+
+/* No server */
+.no-srv{padding:28px 16px;text-align:center;background:var(--orange-bg);border:1px solid var(--orange-border);border-radius:var(--radius-sm);margin-bottom:20px}
+.no-srv .m{font-size:13px;color:var(--orange);font-weight:600}
+.no-srv .s{font-size:11.5px;color:var(--text3);margin-top:3px}
+.no-srv button{margin-top:10px;padding:7px 18px;background:var(--orange-bg);border:1px solid var(--orange-border);border-radius:6px;font-family:inherit;font-size:12px;font-weight:600;color:var(--orange);cursor:pointer}
+
+/* Server List Tab — mobile card layout */
+.slist-info{padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.5}
+.slist-info strong{color:var(--text)}
+.slist-wrap{max-height:500px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card)}
+.slist-filter{display:flex;gap:8px;margin-bottom:12px}
+.slist-filter input,.slist-filter select{padding:8px 11px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:12.5px;color:var(--text);outline:none}
+.slist-filter input{flex:1}
+.slist-filter input:focus,.slist-filter select:focus{border-color:var(--accent)}
+
+/* Desktop: table view */
+#slistTable{width:100%;border-collapse:collapse;font-size:12px}
+#slistTable th{text-align:left;padding:8px 10px;background:var(--card2);color:var(--text2);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
+#slistTable td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+#slistTable tr:hover td{background:rgba(255,255,255,0.02)}
+/* Mobile card view for server list */
+.sl-cards{display:none;flex-direction:column;gap:6px;padding:8px}
+.sl-card{padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sl-card-info{flex:1;min-width:0}
+.sl-card-provider{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl-card-loc{font-size:11px;color:var(--text2);margin-top:2px}
+.sl-card-id{font-size:10px;color:var(--accent);font-family:monospace;margin-top:2px}
+.sl-card .btn-sm{flex-shrink:0;margin:0;padding:8px 16px;font-size:12px;font-weight:600}
+
+/* Tools tab */
+.tool-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px}
+.tool-card h3{font-size:14px;font-weight:700;color:#fff;margin-bottom:4px}
+.tool-card p{font-size:12.5px;color:var(--text2);line-height:1.5}
+.tool-card a{color:var(--accent);text-decoration:none}
+.tool-card a:hover{text-decoration:underline}
+.tool-card .tag{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600;margin-top:6px}
+
+/* Footer */
+.foot{margin-top:36px;padding:14px 0;border-top:1px solid var(--border);text-align:center;font-size:10.5px;color:var(--text3);cursor:default}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);padding:10px 20px;border-radius:100px;font-family:inherit;font-size:13px;font-weight:600;color:#fff;z-index:9999;pointer-events:none;opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);white-space:nowrap;box-shadow:var(--shadow-lg)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast-accent{background:var(--accent)}
+.toast-green{background:var(--green)}
+.toast-purple{background:var(--purple)}
+.toast-orange{background:var(--orange)}
+.toast-pink{background:var(--pink)}
+
+/* Matrix rain canvas */
+#matrixCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:9998;pointer-events:none;opacity:0;transition:opacity .5s}
+#matrixCanvas.on{opacity:.12}
+
+/* Confetti */
+.confetti-piece{position:fixed;width:8px;height:8px;z-index:9997;pointer-events:none;border-radius:2px;animation:confetti-fall 2.5s ease-in forwards}
+@keyframes confetti-fall{
+  0%{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}
+  100%{opacity:0;transform:translateY(100vh) rotate(720deg) scale(0.3)}
+}
+
+/* Party mode */
+body.party-mode .hdr h1{animation:rainbow 1.5s linear infinite}
+@keyframes rainbow{
+  0%{color:#ff6b6b}16%{color:#ffa500}33%{color:#ffd93d}50%{color:#6bcb77}66%{color:#5b9aff}83%{color:#a78bfa}100%{color:#ff6b6b}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+@media(max-width:600px){
+  .hdr h1{font-size:22px}
+  .stats{grid-template-columns:1fr}
+  .grid{grid-template-columns:1fr}
+  .slist-filter{flex-direction:column}
+  /* Hide table, show cards on mobile */
+  #slistTable{display:none}
+  .sl-cards{display:flex}
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="hdr">
+    <div class="pill"><span class="dot"></span>Speedtest Faker</div>
+    <div class="logo-wrap" id="logoWrap" title="Click me... a few times 😏">
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="56" height="56" rx="14" fill="url(#logoBg)"/>
+        <path d="M32 8L15 32h11L22 48l17-24H28z" fill="url(#logoBolt)" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
+        <circle cx="28" cy="28" r="26" stroke="url(#logoRing)" stroke-width="1" fill="none" opacity="0.3"/>
+        <defs>
+          <linearGradient id="logoBg" x1="0" y1="0" x2="56" y2="56"><stop stop-color="#1e2028"/><stop offset="1" stop-color="#272a33"/></linearGradient>
+          <linearGradient id="logoBolt" x1="18" y1="8" x2="36" y2="48"><stop stop-color="#5b9aff"/><stop offset="0.5" stop-color="#a78bfa"/><stop offset="1" stop-color="#f472b6"/></linearGradient>
+          <linearGradient id="logoRing" x1="0" y1="0" x2="56" y2="56"><stop stop-color="#5b9aff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <h1>Server Picker & Generator</h1>
+    <p>Search Ookla servers · See speed tiers · Generate fake results · Browse server list</p>
+  </div>
+
+  <div id="modeBar" class="mode-bar mode-static">
+    <span>⚠️</span><span><strong>Static mode</strong> — search works, generating real links needs <code>python server.py</code></span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="go('search')">🔍 Search</button>
+    <button class="tab" onclick="go('gen')">⚡ Generate</button>
+    <button class="tab" onclick="go('list')">📋 Server List</button>
+    <button class="tab" onclick="go('tools')">🛠️ Tools</button>
+  </div>
+
+  <!-- SEARCH -->
+  <div id="p_search">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="q" placeholder="Search by city, country, or ISP (e.g. Frankfurt, Comcast, Penang)..." autocomplete="off">
+      <span class="spin" id="sp"><span style="display:inline-block;animation:spin .7s linear infinite">⟳</span> searching...</span>
+    </div>
+    <div id="serr"></div>
+    <div id="sres"></div>
+    <div class="empty" id="sempty">
+      <div class="ico">🌐</div>
+      <div class="t1">Start typing to search Ookla's server database</div>
+      <div class="t2">Try: "Frankfurt", "Comcast", "Penang", "Deutsche Telekom", "Tokyo", "Hetzner"</div>
+    </div>
+  </div>
+
+  <!-- GENERATE -->
+  <div id="p_gen" style="display:none">
+    <div id="selDisp"></div>
+    <div class="grid">
+      <div class="field"><label>⬇️ Download (Mbps)</label><input type="number" id="iDl" placeholder="0–10000" min="0" max="10000" step="0.01"></div>
+      <div class="field"><label>⬆️ Upload (Mbps)</label><input type="number" id="iUl" placeholder="0–10000" min="0" max="10000" step="0.01"></div>
+      <div class="field"><label>📡 Ping (ms)</label><input type="number" id="iPing" placeholder="1–65535" min="1" max="65535"></div>
+      <div class="field"><label>⏱️ DL Latency (ms)</label><input type="number" id="iDlL" placeholder="optional"></div>
+      <div class="field"><label>⏱️ UL Latency (ms)</label><input type="number" id="iUlL" placeholder="optional"></div>
+    </div>
+    <div class="presets-lbl">Quick Presets</div>
+    <div class="presets">
+      <button class="preset" onclick="pre(940,880,3)">1 Gbps</button>
+      <button class="preset" onclick="pre(2500,2500,2)">2.5 Gbps</button>
+      <button class="preset" onclick="pre(5000,5000,1)">5 Gbps</button>
+      <button class="preset" onclick="pre(9400,9200,1)">10 Gbps</button>
+      <button class="preset" onclick="pre(500,500,5)">Fiber</button>
+      <button class="preset" onclick="pre(100,20,28)">Cable</button>
+      <button class="preset" onclick="pre(1200,150,12)">5G Flex</button>
+      <button class="preset" onclick="pre(2.4,0.8,847)">Trash WiFi 🗑️</button>
+      <button class="preset fun" onclick="pre(9999,9999,0)">⚡ GOD MODE</button>
+      <button class="preset fun" onclick="pre(6969,6969,1)">😏 Nice</button>
+      <button class="preset fun" onclick="pre(1337,1337,1)">🎮 L33T</button>
+      <button class="preset fun" onclick="pre(0.05,0.01,9999)">🐌 Dial-up</button>
+    </div>
+    <div id="gerr"></div>
+    <button class="gen-btn" id="gbtn" onclick="gen()" disabled>⚡ Generate Fake Speedtest</button>
+    <div id="rArea"></div>
+  </div>
+
+  <!-- SERVER LIST -->
+  <div id="p_list" style="display:none">
+    <div class="slist-info">
+      <strong>Full Ookla Server Database</strong> — This loads the static server list from <a href="https://williamyaps.github.io/wlmjavascript/servercli.html" target="_blank" style="color:var(--accent)">williamyaps</a>. You can also search live with the Search tab. Filter below to find servers by country, city, or provider.
+    </div>
+    <div class="slist-filter">
+      <input id="slFilter" placeholder="Filter by country, city, provider, or ID...">
+      <button class="btn-sm" onclick="loadSList()" id="slBtn">Load Server List</button>
+    </div>
+    <div class="slist-wrap" id="slWrap" style="display:none">
+      <!-- Desktop table -->
+      <table id="slistTable">
+        <thead><tr><th>Country</th><th>City</th><th>Provider</th><th>ID</th><th></th></tr></thead>
+        <tbody id="slBody"></tbody>
+      </table>
+      <!-- Mobile cards -->
+      <div class="sl-cards" id="slCards"></div>
+    </div>
+    <div id="slStatus" class="empty" style="padding:24px">
+      <div class="ico">📋</div>
+      <div class="t1">Click "Load Server List" to fetch the full database</div>
+      <div class="t2">~15,000+ servers worldwide</div>
+    </div>
+  </div>
+
+  <!-- TOOLS -->
+  <div id="p_tools" style="display:none">
+    <div class="tool-card">
+      <h3>🔗 Speedtest Result Lookup</h3>
+      <p>Got a speedtest.net result ID? View it directly:</p>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="lookupId" placeholder="Result ID (e.g. 19271588932)" style="flex:1;padding:8px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;color:var(--text);outline:none">
+        <button class="cbtn cbtn-p" onclick="window.open('https://www.speedtest.net/result/'+document.getElementById('lookupId').value,'_blank')">Open</button>
+        <button class="cbtn cbtn-s" onclick="window.open('https://www.speedtest.net/result/'+document.getElementById('lookupId').value+'.png','_blank')">Image</button>
+      </div>
+    </div>
+    <div class="tool-card">
+      <h3>🌍 Alternative Speed Test Tools</h3>
+      <p>Other popular speed testing services:</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <a href="https://fast.com" target="_blank" class="cbtn cbtn-s" style="text-decoration:none">fast.com (Netflix)</a>
+        <a href="https://speed.cloudflare.com" target="_blank" class="cbtn cbtn-s" style="text-decoration:none">Cloudflare Speed</a>
+        <a href="https://www.waveform.com/tools/bufferbloat" target="_blank" class="cbtn cbtn-s" style="text-decoration:none">Waveform Bufferbloat</a>
+        <a href="https://openspeedtest.com" target="_blank" class="cbtn cbtn-s" style="text-decoration:none">OpenSpeedTest</a>
+        <a href="https://librespeed.org" target="_blank" class="cbtn cbtn-s" style="text-decoration:none">LibreSpeed</a>
+        <a href="https://speedof.me" target="_blank" class="cbtn cbtn-s" style="text-decoration:none">SpeedOf.Me</a>
+      </div>
+    </div>
+    <div class="tool-card">
+      <h3>📊 Ookla Global Speed Index</h3>
+      <p>Compare internet speeds across countries and providers.</p>
+      <a href="https://www.speedtest.net/global-index" target="_blank" class="cbtn cbtn-p" style="display:inline-block;margin-top:8px;text-decoration:none">View Global Index →</a>
+    </div>
+    <div class="tool-card">
+      <h3>🖥️ Speedtest CLI</h3>
+      <p>Run speed tests from your terminal. Install the official Ookla CLI:</p>
+      <div style="margin-top:8px;padding:10px 12px;background:var(--bg2);border-radius:6px;font-family:monospace;font-size:12px;color:var(--accent);line-height:1.6">
+        <div style="color:var(--text3)"># macOS</div>
+        brew install speedtest-cli<br>
+        <div style="color:var(--text3);margin-top:4px"># Linux</div>
+        curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash<br>
+        sudo apt install speedtest<br>
+        <div style="color:var(--text3);margin-top:4px"># Test a specific server</div>
+        speedtest -s SERVER_ID
+      </div>
+    </div>
+    <div class="tool-card">
+      <h3>🔧 Server Search API</h3>
+      <p>Ookla's public server search endpoint you can query directly:</p>
+      <div style="margin-top:8px;padding:10px 12px;background:var(--bg2);border-radius:6px;font-family:monospace;font-size:11.5px;color:var(--accent);word-break:break-all;line-height:1.5">
+        https://www.speedtest.net/api/js/servers?engine=js&search=QUERY&limit=20
+      </div>
+      <p style="margin-top:6px;font-size:11.5px;color:var(--text3)">Returns JSON with id, name, sponsor, host, country, lat, lon, distance fields.</p>
+    </div>
+    <div class="tool-card" id="tzCard">
+      <h3>⏰ About Result Timestamps</h3>
+      <p id="tzInfo">Speedtest.net result timestamps use <strong>GMT/UTC</strong> time, not your local timezone. Loading your timezone...</p>
+    </div>
+    <div class="tool-card">
+      <h3>📡 Speed Tier Estimates</h3>
+      <p>Ookla's API doesn't expose server bandwidth capacity. Our tier badges are heuristic guesses based on the server's sponsor name:</p>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;font-size:12px">
+        <div><span class="badge b-100g">100 Gbps</span> i3D.net, Hetzner, OVH, Vultr, Leaseweb, FDCservers, Hurricane Electric</div>
+        <div><span class="badge b-40g">40 Gbps</span> Comcast, AT&T, Deutsche Telekom, BT, Virgin Media, Orange, Swisscom</div>
+        <div><span class="badge b-10g">10 Gbps</span> Most ISPs, regional providers, smaller telecoms</div>
+      </div>
+      <p style="margin-top:6px;font-size:11.5px;color:var(--text3)">Want accurate capacity? Test the server yourself with <code style="color:var(--accent)">speedtest -s SERVER_ID</code></p>
+    </div>
+  </div>
+
+  <div class="foot" id="footer">Uses Ookla's public server search API · Speed tier estimates are approximate · For pranks only 😏</div>
+</div>
+
+<!-- Toast container -->
+<div class="toast" id="toast"></div>
+
+<!-- Matrix rain -->
+<canvas id="matrixCanvas"></canvas>
+
+<script>
+let servers=[],sel=null,isLocal=false,dt=null,allSrv=[],filteredSrv=[];
+
+/* ===== CONSOLE EASTER EGG GUIDE ===== */
+console.log(
+  '%c⚡ Speedtest Faker %c— Easter Eggs 🥚',
+  'background:#5b9aff;color:#fff;font-size:18px;font-weight:900;padding:8px 14px;border-radius:6px 0 0 6px;',
+  'background:#a78bfa;color:#fff;font-size:18px;font-weight:700;padding:8px 14px;border-radius:0 6px 6px 0;'
+);
+console.log(
+  '%c'+[
+    '┌─────────────────────────────────────────────────────┐',
+    '│  🎮  Konami Code   ↑↑↓↓←→←→BA     Matrix rain      │',
+    '│  ⚡  Logo           Click 7x fast   Party mode 🎉    │',
+    '│  👆  Footer         Triple-click    Secret credits    │',
+    '│  📱  Shake phone    Just shake it   Confetti burst    │',
+    '│  🔍  Search "help"  Press Enter     Hint for Konami   │',
+    '│  🔍  "speedtest"    Press Enter     Snarky message    │',
+    '│  🔍  "ookla"        Press Enter     Who?              │',
+    '├─────────────────────────────────────────────────────┤',
+    '│  Speed Value Triggers (in Generate tab):             │',
+    '│  69 or 6969 → Nice 😏    420 → Blazing fast 🔥      │',
+    '│  42 → Hitchhiker\'s 🌌    1337 → h4x0r 🎮            │',
+    '│  9999/9999 → UNLIMITED   ping 0 → Time traveler ⏳  │',
+    '│  ping ≥ 9000 → Over 9k   0.01 → NASA WiFi 🐌       │',
+    '└─────────────────────────────────────────────────────┘'
+  ].join('\n'),
+  'color:#45d483;font-family:monospace;font-size:11px;line-height:1.5;'
+);
+console.log('%cType easter() in this console for a quick list.','color:#6b7080;font-size:11px;');
+window.easter=function(){
+  console.table([
+    {egg:'Konami Code',trigger:'↑↑↓↓←→←→BA',effect:'Matrix rain (15s)'},
+    {egg:'Logo clicks',trigger:'Click logo 7x fast',effect:'Party mode + confetti'},
+    {egg:'Footer',trigger:'Triple-click',effect:'Secret credits'},
+    {egg:'Shake',trigger:'Shake your phone',effect:'Confetti burst'},
+    {egg:'Search: help',trigger:'Type "help" + Enter',effect:'Konami hint'},
+    {egg:'Search: speedtest',trigger:'Type "speedtest" + Enter',effect:'Snarky message'},
+    {egg:'Search: ookla',trigger:'Type "ookla" + Enter',effect:'Who?'},
+    {egg:'Speed: 69/6969',trigger:'Set DL or UL',effect:'Nice 😏'},
+    {egg:'Speed: 420',trigger:'Set DL or UL',effect:'Blazing fast 🔥'},
+    {egg:'Speed: 42',trigger:'Set DL or UL',effect:'Hitchhiker\'s Guide'},
+    {egg:'Speed: 1337',trigger:'Set DL or UL',effect:'h4x0r detected'},
+    {egg:'Speed: 9999/9999',trigger:'Set both DL+UL',effect:'UNLIMITED POWER'},
+    {egg:'Ping: 0',trigger:'Set ping to 0',effect:'Time traveler?'},
+    {egg:'Ping: ≥9000',trigger:'Set ping ≥9000',effect:'Over 9000!!'},
+    {egg:'Speed: 0.01',trigger:'Set DL or UL',effect:'NASA WiFi 🐌'},
+  ]);
+};
+
+/* ===== MODE DETECTION ===== */
+(async()=>{try{const r=await fetch('/api/servers?search=test&limit=1');if(r.ok){isLocal=true;const b=document.getElementById('modeBar');b.className='mode-bar mode-local';b.innerHTML='<span>✅</span><span><strong>Server mode</strong> — Full functionality. Search + generate real speedtest.net links.</span>'}}catch(e){}})();
+
+/* ===== AUTO TIMEZONE ===== */
+(function(){
+  try{
+    const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const offset=-new Date().getTimezoneOffset();
+    const sign=offset>=0?'+':'-';
+    const h=String(Math.floor(Math.abs(offset)/60)).padStart(2,'0');
+    const m=String(Math.abs(offset)%60).padStart(2,'0');
+    const utcStr=`UTC${sign}${h}:${m}`;
+    const city=tz.split('/').pop().replace(/_/g,' ');
+    const now=new Date();
+    const localStr=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:tz});
+    const utcTime=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'UTC'});
+    document.getElementById('tzInfo').innerHTML=
+      `Speedtest.net result timestamps use <strong>GMT/UTC</strong> time, not your local timezone. `+
+      `You're at <strong>${utcStr}</strong> (${esc(city)}). Right now it's <strong>${localStr}</strong> local → the result would show <strong>${utcTime} GMT</strong>. `+
+      `This is normal Ookla behavior — the result is still valid.`;
+  }catch(e){}
+})();
+
+/* ===== TABS ===== */
+function go(t){
+  ['search','gen','list','tools'].forEach(x=>{
+    document.getElementById('p_'+x).style.display=x===t?'':'none';
+  });
+  document.querySelectorAll('.tab').forEach((b,i)=>{
+    b.className='tab'+(['search','gen','list','tools'][i]===t?' on':'');
+  });
+  if(t==='gen')renderSel();
+}
+
+/* ===== SEARCH (starts at 1 char, faster debounce) ===== */
+let dbT;
+document.getElementById('q').addEventListener('input',function(){
+  clearTimeout(dbT);const v=this.value.trim();
+  if(v.length<1){servers=[];renderSrv();return}
+  dbT=setTimeout(()=>doSearch(v),200);
+});
+
+async function doSearch(q){
+  document.getElementById('sp').className='spin on';
+  document.getElementById('serr').innerHTML='';
+  document.getElementById('sempty').style.display='none';
+  try{
+    let url=isLocal?`/api/servers?search=${encodeURIComponent(q)}&limit=20`
+      :`https://www.speedtest.net/api/js/servers?engine=js&search=${encodeURIComponent(q)}&https_functional=true&limit=20`;
+    const r=await fetch(url);if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();servers=Array.isArray(d)?d:[];
+    if(!servers.length)document.getElementById('serr').innerHTML='<div class="alert alert-w">No servers found. Try a different search term.</div>';
+  }catch(e){
+    document.getElementById('serr').innerHTML=isLocal
+      ?`<div class="alert alert-e">Search failed: ${esc(e.message)}</div>`
+      :'<div class="alert alert-w">Direct API call may be blocked by CORS. Run <code>python server.py</code> locally for the proxy.</div>';
+    servers=[];
+  }
+  document.getElementById('sp').className='spin';
+  renderSrv();
+}
+
+function tier(s){
+  const h=(s.host||'').toLowerCase(),n=(s.sponsor||'').toLowerCase();
+  if(['fdcservers','i3d.net','blix','he.net','hurricane','leaseweb','nforce','choopa','vultr','100g','hetzner','ovh','softlayer','linode','digitalocean','packet'].some(k=>h.includes(k)||n.includes(k)))return{t:'100 Gbps',c:'b-100g'};
+  if(['comcast','charter','cox','xfinity','at&t','verizon fios','bt ','virgin media','deutsche telekom','telefonica','orange','swisscom','telia','proximus','vodafone','telstra','optus','singtel','starhub','jio','airtel'].some(k=>h.includes(k)||n.includes(k)))return{t:'40 Gbps',c:'b-40g'};
+  if(['speedtest','telecom','fiber','telco','10g'].some(k=>h.includes(k)||n.includes(k)))return{t:'10 Gbps',c:'b-10g'};
+  return{t:'~10 Gbps',c:'b-unk'};
+}
+
+function renderSrv(){
+  const el=document.getElementById('sres');
+  if(!servers.length){el.innerHTML='';if(document.getElementById('q').value.trim().length<1)document.getElementById('sempty').style.display='';return}
+  document.getElementById('sempty').style.display='none';
+  let h=`<div class="srv-count"><span>${servers.length} server${servers.length>1?'s':''}</span><span>Click to select</span></div><div class="srv-list">`;
+  servers.forEach(s=>{
+    const t=tier(s),isSel=sel&&sel.id===s.id;
+    h+=`<button class="srv${isSel?' sel':''}" onclick="pick('${s.id}')"><div class="srv-row"><div style="flex:1;min-width:0"><div class="srv-name">${esc(s.sponsor||'Unknown')}<span class="badge ${t.c}">${t.t}</span></div><div class="srv-meta"><span>📍 ${esc(s.name)}, ${esc(s.country)}</span><span>· ID: ${esc(s.id)}</span>${s.distance!=null?`<span>· 📏 ${s.distance}km</span>`:''}</div><div class="srv-host">${esc(s.host)}</div></div><div class="srv-act">${isSel?'✓ Selected':'Select →'}</div></div></button>`;
+  });
+  el.innerHTML=h+'</div>';
+}
+
+function pick(id){sel=servers.find(s=>s.id==id)||sel;renderSrv();go('gen')}
+
+function renderSel(){
+  const el=document.getElementById('selDisp'),btn=document.getElementById('gbtn');
+  if(!sel){el.innerHTML='<div class="no-srv"><div class="m">No server selected</div><div class="s">Go to Search tab and pick a server</div><button onclick="go(\'search\')">🔍 Search servers</button></div>';btn.disabled=true;return}
+  btn.disabled=false;const t=tier(sel);
+  el.innerHTML=`<div class="sel-srv"><div class="lbl">Selected Server</div><div class="nm">${esc(sel.sponsor)} — ${esc(sel.name)}, ${esc(sel.country)}</div><div class="det"><span>ID: ${esc(sel.id)}</span><span>Host: ${esc(sel.host)}</span><span class="badge ${t.c}">${t.t}</span></div><button class="btn-sm" onclick="go('search')">Change server</button></div>`;
+}
+
+function pre(d,u,p){document.getElementById('iDl').value=d;document.getElementById('iUl').value=u;document.getElementById('iPing').value=p;document.getElementById('iDlL').value='';document.getElementById('iUlL').value=''}
+
+async function gen(){
+  if(!sel)return;
+  const dl=parseFloat(document.getElementById('iDl').value),ul=parseFloat(document.getElementById('iUl').value),ping=parseInt(document.getElementById('iPing').value);
+  const dlL=document.getElementById('iDlL').value||ping,ulL=document.getElementById('iUlL').value||ping;
+  const err=document.getElementById('gerr');err.innerHTML='';
+  if(isNaN(dl)||isNaN(ul)||isNaN(ping)){err.innerHTML='<div class="alert alert-e">Fill in download, upload, and ping.</div>';return}
+  if(dl<0||dl>10000||ul<0||ul>10000){err.innerHTML='<div class="alert alert-e">Speed must be 0–10,000 Mbps.</div>';return}
+
+  // Easter egg checks
+  checkEasterEgg(dl,ul,ping);
+
+  const btn=document.getElementById('gbtn');btn.disabled=true;btn.textContent='⏳ Generating...';
+  if(isLocal){
+    try{
+      const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({download:dl,upload:ul,ping,server:sel.id,downloadlatency:dlL,uploadlatency:ulL})});
+      const d=await r.json();
+      if(d.success)showResult(dl,ul,ping,d.result_url,d.image_url);
+      else err.innerHTML=`<div class="alert alert-e">Failed: ${esc(d.error||'Unknown')}</div>${d.raw?`<div class="alert alert-w" style="margin-top:6px;font-size:11px;font-family:monospace;word-break:break-all">Raw: ${esc(d.raw)}</div>`:''}`;
+    }catch(e){err.innerHTML=`<div class="alert alert-e">Network error: ${esc(e.message)}</div>`}
+  }else{
+    showStatic(dl,ul,ping);
+  }
+  btn.disabled=false;btn.textContent='⚡ Generate Fake Speedtest';
+}
+
+function showResult(dl,ul,ping,url,img){
+  document.getElementById('rArea').innerHTML=`
+    <div class="result"><div class="lbl">✅ Result Generated</div>
+    <div class="stats"><div class="stat stat-dl"><div class="sl">Download</div><div class="sv">${dl}</div><div class="su">Mbps</div></div><div class="stat stat-ul"><div class="sl">Upload</div><div class="sv">${ul}</div><div class="su">Mbps</div></div><div class="stat stat-pi"><div class="sl">Ping</div><div class="sv">${ping}</div><div class="su">ms</div></div></div>
+    <div class="rlinks"><div class="rl">Result Link</div><a href="${esc(url)}" target="_blank">${esc(url)}</a><div class="rl">Image Link</div><a href="${esc(img)}" target="_blank">${esc(img)}</a></div>
+    <div class="copy-row"><button class="cbtn cbtn-p" onclick="cp('${esc(url)}',this)">📋 Copy Link</button><button class="cbtn cbtn-s" onclick="cp('${esc(img)}',this)">🖼️ Copy Image URL</button></div>
+    <div class="result-img"><a href="${esc(url)}" target="_blank"><img src="${esc(img)}" alt="Result" onerror="this.parentElement.style.display='none'"></a></div></div>`;
+}
+
+function showStatic(dl,ul,ping){
+  document.getElementById('rArea').innerHTML=`
+    <div class="result" style="background:var(--orange-bg);border-color:var(--orange-border)"><div class="lbl" style="color:var(--orange)">📋 Static Mode</div>
+    <div class="stats"><div class="stat stat-dl"><div class="sl">Download</div><div class="sv">${dl}</div><div class="su">Mbps</div></div><div class="stat stat-ul"><div class="sl">Upload</div><div class="sv">${ul}</div><div class="su">Mbps</div></div><div class="stat stat-pi"><div class="sl">Ping</div><div class="sv">${ping}</div><div class="su">ms</div></div></div>
+    <div class="rlinks" style="background:var(--orange-bg);border-color:var(--orange-border)"><div class="rl" style="color:var(--orange)">⚠️ Run server.py for real links</div><div style="font-size:12px;color:var(--text2);margin-top:4px">Server search works, but creating actual speedtest.net result links needs the Python backend. Run <code>python server.py</code> → <code>localhost:8888</code></div></div>
+    <div class="copy-row"><button class="cbtn cbtn-p" onclick="cp('${sel.id}',this)">📋 Copy Server ID: ${sel.id}</button></div></div>`;
+}
+
+function cp(t,b){navigator.clipboard.writeText(t).then(()=>{const o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1200)})}
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=String(s);return d.innerHTML}
+
+/* ===== SERVER LIST (with mobile card view) ===== */
+async function loadSList(){
+  const btn=document.getElementById('slBtn');btn.textContent='Loading...';btn.disabled=true;
+  document.getElementById('slStatus').innerHTML='<div class="t1" style="padding:16px">⏳ Fetching server list...</div>';
+  try{
+    const r=await fetch('https://williamyaps.github.io/wlmjavascript/servercli.html');
+    const html=await r.text();
+    const parser=new DOMParser();const doc=parser.parseFromString(html,'text/html');
+    const rows=doc.querySelectorAll('table tr');
+    allSrv=[];
+    rows.forEach((row,i)=>{
+      if(i===0)return;
+      const cells=row.querySelectorAll('td');
+      if(cells.length>=5){
+        allSrv.push({country:cells[0].textContent.trim(),city:cells[1].textContent.trim(),provider:cells[2].textContent.trim(),host:cells[3].textContent.trim(),id:cells[4].textContent.trim()});
+      }
+    });
+    filteredSrv=[...allSrv];
+    document.getElementById('slStatus').style.display='none';
+    document.getElementById('slWrap').style.display='';
+    renderSList();
+    btn.textContent=`Loaded (${allSrv.length})`;
+  }catch(e){
+    document.getElementById('slStatus').innerHTML=`<div class="t1" style="color:var(--red)">Failed to load: ${esc(e.message)}</div>`;
+    btn.textContent='Retry';btn.disabled=false;
+  }
+}
+
+document.getElementById('slFilter').addEventListener('input',function(){
+  const q=this.value.toLowerCase();
+  if(!q){filteredSrv=[...allSrv]}else{
+    filteredSrv=allSrv.filter(s=>s.country.toLowerCase().includes(q)||s.city.toLowerCase().includes(q)||s.provider.toLowerCase().includes(q)||s.id.includes(q));
+  }
+  renderSList();
+});
+
+function renderSList(){
+  const body=document.getElementById('slBody');
+  const cards=document.getElementById('slCards');
+  const show=filteredSrv.slice(0,500);
+  // Desktop table
+  body.innerHTML=show.map(s=>`<tr><td>${esc(s.country)}</td><td>${esc(s.city)}</td><td>${esc(s.provider)}</td><td style="font-family:monospace;font-size:11px;color:var(--accent)">${esc(s.id)}</td><td><button class="btn-sm" onclick="pickFromList('${esc(s.id)}','${esc(s.provider)}','${esc(s.city)}','${esc(s.country)}','${esc(s.host)}')">Use</button></td></tr>`).join('');
+  // Mobile cards
+  cards.innerHTML=show.map(s=>`<div class="sl-card"><div class="sl-card-info"><div class="sl-card-provider">${esc(s.provider)}</div><div class="sl-card-loc">📍 ${esc(s.city)}, ${esc(s.country)}</div><div class="sl-card-id">ID: ${esc(s.id)}</div></div><button class="btn-sm" onclick="pickFromList('${esc(s.id)}','${esc(s.provider)}','${esc(s.city)}','${esc(s.country)}','${esc(s.host)}')">Use</button></div>`).join('');
+  const overflow=filteredSrv.length>500?`<div style="text-align:center;color:var(--text3);font-size:11px;padding:12px">Showing 500 of ${filteredSrv.length} — narrow your filter</div>`:'';
+  if(overflow){body.innerHTML+=`<tr><td colspan="5">${overflow}</td></tr>`;cards.innerHTML+=overflow;}
+}
+
+function pickFromList(id,sponsor,city,country,host){
+  sel={id,sponsor,name:city,country,host:host||'',distance:null};
+  go('gen');
+}
+
+/* ===== TOAST SYSTEM ===== */
+let toastTimer;
+function showToast(msg,type='accent'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast toast-${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{t.className='toast'},2500);
+}
+
+/* ===== EASTER EGGS ===== */
+
+// 1. Speed value jokes
+function checkEasterEgg(dl,ul,ping){
+  if(dl===69||ul===69||dl===6969||ul===6969)showToast('Nice. 😏','pink');
+  else if(dl===420||ul===420)showToast('Blazing fast 🔥','green');
+  else if(dl===42||ul===42)showToast('The answer to life, the universe, and bandwidth','purple');
+  else if(ping===0)showToast('Ping 0? Are you a time traveler? ⏳','orange');
+  else if(dl===1337||ul===1337)showToast('h4x0r d3t3ct3d 🎮','purple');
+  else if(dl===9999&&ul===9999)showToast('UNLIMITED POWER ⚡','accent');
+  else if(ping>=9000)showToast("It's over 9000!! (ms of pain)",'orange');
+  else if(dl===0.01||ul===0.01)showToast('Did you steal NASA\'s WiFi? 🐌','orange');
+}
+
+// 2. Konami code → matrix rain
+let konamiSeq=[],konamiCode='ArrowUp,ArrowUp,ArrowDown,ArrowDown,ArrowLeft,ArrowRight,ArrowLeft,ArrowRight,b,a';
+document.addEventListener('keydown',function(e){
+  konamiSeq.push(e.key);if(konamiSeq.length>10)konamiSeq.shift();
+  if(konamiSeq.join(',')===konamiCode){
+    konamiSeq=[];toggleMatrix();
+  }
+});
+
+let matrixOn=false,matrixAnim,matrixTimeout;
+function toggleMatrix(){
+  const canvas=document.getElementById('matrixCanvas');
+  if(matrixOn){
+    stopMatrix(canvas);showToast('Matrix mode: OFF','accent');return;
+  }
+  matrixOn=true;canvas.classList.add('on');
+  showToast('🟩 Matrix mode — 15s (↑↑↓↓←→←→BA to stop)','green');
+  const ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth;canvas.height=window.innerHeight;
+  const cols=Math.floor(canvas.width/14),drops=Array(cols).fill(1);
+  const chars='01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン⚡';
+  function draw(){
+    ctx.fillStyle='rgba(27,29,35,0.08)';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#45d483';ctx.font='13px monospace';
+    for(let i=0;i<drops.length;i++){
+      const t=chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillText(t,i*14,drops[i]*14);
+      if(drops[i]*14>canvas.height&&Math.random()>0.975)drops[i]=0;
+      drops[i]++;
+    }
+    matrixAnim=requestAnimationFrame(draw);
+  }
+  draw();
+  window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight},{once:true});
+  // Auto-stop after 15 seconds
+  clearTimeout(matrixTimeout);
+  matrixTimeout=setTimeout(()=>{
+    if(matrixOn){stopMatrix(canvas);showToast('Matrix unplugged 🔌','accent');}
+  },15000);
+}
+function stopMatrix(canvas){
+  matrixOn=false;cancelAnimationFrame(matrixAnim);clearTimeout(matrixTimeout);
+  canvas.style.transition='opacity 0.8s';canvas.classList.remove('on');
+  setTimeout(()=>{canvas.style.transition='';},900);
+}
+
+// 3. Logo click → party mode + confetti (7 rapid clicks)
+let logoClicks=0,logoTimer;
+document.getElementById('logoWrap').addEventListener('click',function(){
+  logoClicks++;
+  clearTimeout(logoTimer);
+  logoTimer=setTimeout(()=>{logoClicks=0},800);
+  if(logoClicks===7){
+    logoClicks=0;toggleParty();
+  }else if(logoClicks===3){
+    showToast('Keep clicking... 👀','purple');
+  }
+});
+
+let partyOn=false;
+function toggleParty(){
+  partyOn=!partyOn;
+  document.body.classList.toggle('party-mode',partyOn);
+  if(partyOn){
+    showToast('🎉 PARTY MODE!','pink');
+    spawnConfetti();
+  }else{
+    showToast('Party\'s over 😔','accent');
+  }
+}
+
+function spawnConfetti(){
+  const colors=['#5b9aff','#a78bfa','#f472b6','#45d483','#f0913a','#ffd93d','#ff6b6b'];
+  for(let i=0;i<60;i++){
+    const el=document.createElement('div');el.className='confetti-piece';
+    el.style.left=Math.random()*100+'vw';el.style.top=-10+'px';
+    el.style.background=colors[Math.floor(Math.random()*colors.length)];
+    el.style.animationDelay=Math.random()*1.5+'s';
+    el.style.animationDuration=(2+Math.random()*2)+'s';
+    el.style.width=(5+Math.random()*8)+'px';
+    el.style.height=(5+Math.random()*8)+'px';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),4000);
+  }
+}
+
+// 4. Triple-click footer → secret credits
+let footClicks=0,footTimer;
+document.getElementById('footer').addEventListener('click',function(){
+  footClicks++;clearTimeout(footTimer);
+  footTimer=setTimeout(()=>{footClicks=0},500);
+  if(footClicks===3){
+    footClicks=0;
+    showToast('Made with ⚡ and questionable ethics','purple');
+  }
+});
+
+// 5. Search bar easter egg
+document.getElementById('q').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){
+    const v=this.value.trim().toLowerCase();
+    if(v==='speedtest')showToast('Nice try — WE are the speedtest now 😏','accent');
+    else if(v==='ookla')showToast('Ookla who? 🤷','orange');
+    else if(v==='help')showToast('Try: ↑↑↓↓←→←→BA','purple');
+  }
+});
+
+// 6. Mobile: shake to trigger confetti (works on mobile!)
+let shakeThreshold=15,lastX,lastY,lastZ,lastShake=0;
+window.addEventListener('devicemotion',function(e){
+  const a=e.accelerationIncludingGravity;if(!a)return;
+  const now=Date.now();
+  if(lastX!==undefined){
+    const dx=Math.abs(a.x-lastX),dy=Math.abs(a.y-lastY),dz=Math.abs(a.z-lastZ);
+    if((dx>shakeThreshold||dy>shakeThreshold||dz>shakeThreshold)&&now-lastShake>2000){
+      lastShake=now;spawnConfetti();showToast('🎊 Shake it!','pink');
+    }
+  }
+  lastX=a.x;lastY=a.y;lastZ=a.z;
+});
+
+</script>
+</body>
+</html>

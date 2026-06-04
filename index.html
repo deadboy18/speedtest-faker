@@ -56,7 +56,7 @@ body{font-family:'Instrument Sans',system-ui,sans-serif;background:var(--bg);col
 /* Mode bar */
 .mode-bar{padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;margin-bottom:20px;display:flex;align-items:center;gap:8px;font-weight:500}
 .mode-local{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)}
-.mode-static{background:var(--orange-bg);border:1px solid var(--orange-border);color:var(--orange)}
+.mode-static{background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent)}
 .mode-bar code{background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:11px}
 
 /* Tabs */
@@ -258,7 +258,7 @@ body.party-mode .hdr h1{animation:rainbow 1.5s linear infinite}
   </div>
 
   <div id="modeBar" class="mode-bar mode-static">
-    <span>⚠️</span><span><strong>Static mode</strong> — search works, generating real links needs <code>python server.py</code></span>
+    <span>🌐</span><span><strong>Browser mode</strong> — generates directly via Ookla API. If blocked by CORS, run <code>python server.py</code></span>
   </div>
 
   <div class="tabs">
@@ -556,6 +556,39 @@ function renderSel(){
 
 function pre(d,u,p){document.getElementById('iDl').value=d;document.getElementById('iUl').value=u;document.getElementById('iPing').value=p;document.getElementById('iDlL').value='';document.getElementById('iUlL').value=''}
 
+/* ===== CLIENT-SIDE MD5 (for browser-only generation) ===== */
+function md5hex(str){
+  const bytes=new TextEncoder().encode(str);
+  const bits=bytes.length*8;
+  const padLen=(Math.floor((bytes.length+8)/64)+1)*64;
+  const padded=new Uint8Array(padLen);
+  padded.set(bytes);padded[bytes.length]=0x80;
+  new DataView(padded.buffer).setUint32(padded.length-8,bits,true);
+  let a0=0x67452301,b0=0xefcdab89,c0=0x98badcfe,d0=0x10325476;
+  const S=[7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+  const K=new Uint32Array(64);
+  for(let i=0;i<64;i++)K[i]=Math.floor(Math.abs(Math.sin(i+1))*0x100000000);
+  const view=new DataView(padded.buffer);
+  for(let off=0;off<padded.length;off+=64){
+    const M=new Uint32Array(16);
+    for(let j=0;j<16;j++)M[j]=view.getUint32(off+j*4,true);
+    let A=a0,B=b0,C=c0,D=d0;
+    for(let i=0;i<64;i++){
+      let F,g;
+      if(i<16){F=(B&C)|(~B&D);g=i}
+      else if(i<32){F=(D&B)|(~D&C);g=(5*i+1)%16}
+      else if(i<48){F=B^C^D;g=(3*i+5)%16}
+      else{F=C^(B|~D);g=(7*i)%16}
+      F=((F>>>0)+(A>>>0)+(K[i]>>>0)+(M[g]>>>0))>>>0;
+      A=D;D=C;C=B;B=(B+(((F<<S[i])|(F>>>(32-S[i])))>>>0))>>>0;
+    }
+    a0=(a0+A)>>>0;b0=(b0+B)>>>0;c0=(c0+C)>>>0;d0=(d0+D)>>>0;
+  }
+  function hex(n){let s='';for(let i=0;i<4;i++)s+=((n>>>(i*8))&0xff).toString(16).padStart(2,'0');return s}
+  return hex(a0)+hex(b0)+hex(c0)+hex(d0);
+}
+
+/* ===== GENERATE (works both with server.py AND directly from browser) ===== */
 async function gen(){
   if(!sel)return;
   const dl=parseFloat(document.getElementById('iDl').value),ul=parseFloat(document.getElementById('iUl').value),ping=parseInt(document.getElementById('iPing').value);
@@ -568,7 +601,9 @@ async function gen(){
   checkEasterEgg(dl,ul,ping);
 
   const btn=document.getElementById('gbtn');btn.disabled=true;btn.textContent='⏳ Generating...';
+
   if(isLocal){
+    // Route through server.py proxy
     try{
       const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({download:dl,upload:ul,ping,server:sel.id,downloadlatency:dlL,uploadlatency:ulL})});
       const d=await r.json();
@@ -576,9 +611,44 @@ async function gen(){
       else err.innerHTML=`<div class="alert alert-e">Failed: ${esc(d.error||'Unknown')}</div>${d.raw?`<div class="alert alert-w" style="margin-top:6px;font-size:11px;font-family:monospace;word-break:break-all">Raw: ${esc(d.raw)}</div>`:''}`;
     }catch(e){err.innerHTML=`<div class="alert alert-e">Network error: ${esc(e.message)}</div>`}
   }else{
-    showStatic(dl,ul,ping);
+    // Direct browser generation (no Python needed)
+    await genDirect(dl,ul,ping,dlL,ulL,err);
   }
   btn.disabled=false;btn.textContent='⚡ Generate Fake Speedtest';
+}
+
+async function genDirect(dl,ul,ping,dlL,ulL,errEl){
+  const dlRaw=Math.round(dl*1000),ulRaw=Math.round(ul*1000);
+  const hash=md5hex(`${ping}-${ulRaw}-${dlRaw}-297aae72`);
+  const body=new URLSearchParams({
+    startmode:'recommendedselect',promo:'',
+    upload:ulRaw,accuracy:8,
+    recommendedserverid:sel.id,serverid:sel.id,
+    ping:ping,hash:hash,download:dlRaw,
+    downloadlatency:dlL,uploadlatency:ulL
+  });
+  try{
+    const r=await fetch('https://www.speedtest.net/api/api.php',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded','User-Agent':'Speedtest'},
+      body:body.toString()
+    });
+    const text=await r.text();
+    const params=Object.fromEntries(new URLSearchParams(text));
+    const rid=params.resultid||'';
+    if(rid){
+      showResult(dl,ul,ping,`https://www.speedtest.net/result/${rid}`,`https://www.speedtest.net/result/${rid}.png`);
+    }else{
+      errEl.innerHTML=`<div class="alert alert-e">No result ID returned.</div><div class="alert alert-w" style="margin-top:6px;font-size:11px;font-family:monospace;word-break:break-all">Raw: ${esc(text.slice(0,500))}</div>`;
+    }
+  }catch(e){
+    // CORS or network error — show helpful fallback
+    errEl.innerHTML=`<div class="alert alert-e">Browser blocked the request (CORS). This is normal — Ookla's API doesn't allow cross-origin calls.</div><div class="alert alert-i" style="margin-top:6px">
+      <strong>Two ways to fix this:</strong><br>
+      <span style="opacity:0.85">① Run locally: <code>python server.py</code> → <code>localhost:8888</code> (recommended)</span><br>
+      <span style="opacity:0.85">② Install a CORS browser extension (e.g. "Allow CORS" for Chrome) and reload this page</span>
+    </div>`;
+  }
 }
 
 function showResult(dl,ul,ping,url,img){
@@ -588,14 +658,6 @@ function showResult(dl,ul,ping,url,img){
     <div class="rlinks"><div class="rl">Result Link</div><a href="${esc(url)}" target="_blank">${esc(url)}</a><div class="rl">Image Link</div><a href="${esc(img)}" target="_blank">${esc(img)}</a></div>
     <div class="copy-row"><button class="cbtn cbtn-p" onclick="cp('${esc(url)}',this)">📋 Copy Link</button><button class="cbtn cbtn-s" onclick="cp('${esc(img)}',this)">🖼️ Copy Image URL</button></div>
     <div class="result-img"><a href="${esc(url)}" target="_blank"><img src="${esc(img)}" alt="Result" onerror="this.parentElement.style.display='none'"></a></div></div>`;
-}
-
-function showStatic(dl,ul,ping){
-  document.getElementById('rArea').innerHTML=`
-    <div class="result" style="background:var(--orange-bg);border-color:var(--orange-border)"><div class="lbl" style="color:var(--orange)">📋 Static Mode</div>
-    <div class="stats"><div class="stat stat-dl"><div class="sl">Download</div><div class="sv">${dl}</div><div class="su">Mbps</div></div><div class="stat stat-ul"><div class="sl">Upload</div><div class="sv">${ul}</div><div class="su">Mbps</div></div><div class="stat stat-pi"><div class="sl">Ping</div><div class="sv">${ping}</div><div class="su">ms</div></div></div>
-    <div class="rlinks" style="background:var(--orange-bg);border-color:var(--orange-border)"><div class="rl" style="color:var(--orange)">⚠️ Run server.py for real links</div><div style="font-size:12px;color:var(--text2);margin-top:4px">Server search works, but creating actual speedtest.net result links needs the Python backend. Run <code>python server.py</code> → <code>localhost:8888</code></div></div>
-    <div class="copy-row"><button class="cbtn cbtn-p" onclick="cp('${sel.id}',this)">📋 Copy Server ID: ${sel.id}</button></div></div>`;
 }
 
 function cp(t,b){navigator.clipboard.writeText(t).then(()=>{const o=b.textContent;b.textContent='✓ Copied!';setTimeout(()=>b.textContent=o,1200)})}

@@ -101,6 +101,24 @@ panel.innerHTML=`
 .stf-badge{display:inline-block;padding:3px 10px;background:rgba(69,212,131,0.08);border:1px solid rgba(69,212,131,0.15);border-radius:100px;font-size:10px;font-weight:600;color:#45d483;margin-bottom:10px}
 .stf-server-info{padding:8px 10px;background:#272a33;border:1px solid #353840;border-radius:6px;margin-bottom:10px;font-size:11px;color:#9ea3ad}
 .stf-server-info strong{color:#fff}
+.stf-search-wrap{position:relative;margin-bottom:10px}
+.stf-search-results{position:absolute;top:100%;left:0;right:0;max-height:200px;overflow-y:auto;background:#1e2028;border:1px solid #353840;border-top:none;border-radius:0 0 6px 6px;z-index:10;display:none}
+.stf-search-results.open{display:block}
+.stf-sr-item{padding:8px 10px;cursor:pointer;border-bottom:1px solid #2a2d36;transition:background .1s}
+.stf-sr-item:hover{background:#272a33}
+.stf-sr-item:last-child{border-bottom:none}
+.stf-sr-name{font-size:12px;font-weight:600;color:#fff}
+.stf-sr-meta{font-size:10px;color:#6b7080;margin-top:1px}
+.stf-sr-id{font-family:monospace;color:#5b9aff;font-size:10px}
+.stf-selected{padding:8px 10px;background:rgba(91,154,255,0.08);border:1px solid rgba(91,154,255,0.18);border-radius:6px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.stf-selected-info{flex:1;min-width:0}
+.stf-selected-name{font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stf-selected-meta{font-size:10px;color:#9ea3ad;margin-top:1px}
+.stf-selected-clear{padding:4px 10px;background:#272a33;border:1px solid #353840;border-radius:4px;font-size:10px;color:#9ea3ad;cursor:pointer;flex-shrink:0;margin-left:8px;font-family:inherit}
+.stf-selected-clear:hover{color:#f06060;border-color:rgba(240,96,96,0.3)}
+.stf-or{text-align:center;font-size:10px;color:#6b7080;margin:6px 0;text-transform:uppercase;letter-spacing:0.5px}
+.stf-spin{font-size:10px;color:#5b9aff;position:absolute;right:10px;top:50%;transform:translateY(-50%);display:none}
+.stf-spin.on{display:block}
 @media(max-width:420px){
   #stf-panel{width:calc(100vw - 16px);right:8px;top:8px;max-height:calc(100vh - 16px);border-radius:10px}
   .stf-hdr{border-radius:10px 10px 0 0}
@@ -120,9 +138,17 @@ panel.innerHTML=`
 <div class="stf-body">
   <div class="stf-badge">✅ Running on speedtest.net — no CORS, no rate limits</div>
 
+  <div class="stf-label">🔍 Search Server</div>
+  <div class="stf-search-wrap">
+    <input class="stf-input" id="stf-search" placeholder="Search by city, country, or ISP..." type="text" autocomplete="off">
+    <span class="stf-spin" id="stf-search-spin">⟳</span>
+    <div class="stf-search-results" id="stf-search-results"></div>
+  </div>
+  <div id="stf-selected" class="stf-selected" style="display:none"></div>
+
+  <div class="stf-or">— or enter ID manually —</div>
   <div class="stf-field">
-    <label class="stf-label">Server ID</label>
-    <input class="stf-input" id="stf-srv" placeholder="e.g. 15028 (auto-detected if possible)" type="text">
+    <input class="stf-input" id="stf-srv" placeholder="Server ID (e.g. 15028)" type="text" style="font-family:monospace">
   </div>
   <div id="stf-srv-info" class="stf-server-info" style="display:none"></div>
 
@@ -186,41 +212,79 @@ document.getElementById('stf-close-btn').onclick=function(){panel.style.display=
   document.addEventListener('touchend',function(){dragging=false;panel.style.transition=''});
 })();
 
+/* ===== SERVER SEARCH (same-origin on speedtest.net = no CORS!) ===== */
+let stfSearchTimer,stfSelectedServer=null;
+const searchInput=document.getElementById('stf-search');
+const searchResults=document.getElementById('stf-search-results');
+const searchSpin=document.getElementById('stf-search-spin');
+const selectedDiv=document.getElementById('stf-selected');
+const srvInput=document.getElementById('stf-srv');
+
+searchInput.addEventListener('input',function(){
+  clearTimeout(stfSearchTimer);
+  const q=this.value.trim();
+  if(q.length<1){searchResults.classList.remove('open');return}
+  stfSearchTimer=setTimeout(()=>stfDoSearch(q),250);
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.stf-search-wrap'))searchResults.classList.remove('open');
+});
+
+async function stfDoSearch(q){
+  searchSpin.classList.add('on');
+  try{
+    const r=await fetch(`https://www.speedtest.net/api/js/servers?engine=js&search=${encodeURIComponent(q)}&https_functional=true&limit=10`);
+    const data=await r.json();
+    if(!data.length){
+      searchResults.innerHTML='<div style="padding:10px;text-align:center;color:#6b7080;font-size:11px">No servers found</div>';
+    }else{
+      searchResults.innerHTML=data.map(s=>`<div class="stf-sr-item" data-id="${esc(String(s.id))}" data-sponsor="${esc(s.sponsor||'')}" data-name="${esc(s.name||'')}" data-country="${esc(s.country||'')}" data-host="${esc(s.host||'')}"><div class="stf-sr-name">${esc(s.sponsor||'Unknown')}</div><div class="stf-sr-meta">📍 ${esc(s.name)}, ${esc(s.country)} · <span class="stf-sr-id">ID: ${esc(String(s.id))}</span>${s.distance!=null?' · '+s.distance+'km':''}</div></div>`).join('');
+    }
+    searchResults.classList.add('open');
+  }catch(e){
+    searchResults.innerHTML='<div style="padding:10px;color:#f06060;font-size:11px">Search failed: '+esc(e.message)+'</div>';
+    searchResults.classList.add('open');
+  }
+  searchSpin.classList.remove('on');
+}
+
+searchResults.addEventListener('click',function(e){
+  const item=e.target.closest('.stf-sr-item');
+  if(!item)return;
+  stfSelectedServer={
+    id:item.dataset.id,
+    sponsor:item.dataset.sponsor,
+    name:item.dataset.name,
+    country:item.dataset.country,
+    host:item.dataset.host
+  };
+  srvInput.value=stfSelectedServer.id;
+  selectedDiv.innerHTML=`<div class="stf-selected-info"><div class="stf-selected-name">${esc(stfSelectedServer.sponsor)} — ${esc(stfSelectedServer.name)}, ${esc(stfSelectedServer.country)}</div><div class="stf-selected-meta">ID: ${esc(stfSelectedServer.id)} · ${esc(stfSelectedServer.host)}</div></div><button class="stf-selected-clear" onclick="stfClearServer()">✕</button>`;
+  selectedDiv.style.display='flex';
+  searchResults.classList.remove('open');
+  searchInput.value='';
+});
+
+window.stfClearServer=function(){
+  stfSelectedServer=null;
+  srvInput.value='';
+  selectedDiv.style.display='none';
+};
+
 /* ===== AUTO-DETECT SERVER ===== */
 (function(){
   try{
-    // Try to find server ID from speedtest.net's own state
-    const srvInput=document.getElementById('stf-srv');
     const srvInfo=document.getElementById('stf-srv-info');
-
-    // Method 1: Check URL hash (speedtest.net sometimes stores server in hash)
     const hashMatch=location.hash.match(/server[_-]?id[=:](\d+)/i);
     if(hashMatch){srvInput.value=hashMatch[1]}
-
-    // Method 2: Look for server info in the page's JavaScript state
     if(window.__NEXT_DATA__&&window.__NEXT_DATA__.props){
-      try{
-        const p=JSON.stringify(window.__NEXT_DATA__.props);
-        const m=p.match(/"id":(\d{4,6})/);
-        if(m)srvInput.value=m[1];
-      }catch(e){}
+      try{const p=JSON.stringify(window.__NEXT_DATA__.props);const m=p.match(/"id":(\d{4,6})/);if(m)srvInput.value=m[1]}catch(e){}
     }
-
-    // Method 3: Look for server elements in the DOM
-    if(!srvInput.value){
-      const el=document.querySelector('[data-server-id]');
-      if(el)srvInput.value=el.getAttribute('data-server-id');
-    }
-
-    // Method 4: Check for sponsor/server name in page
-    if(!srvInput.value){
-      const sponsorEl=document.querySelector('.server-name, .hostUrl, [class*="ServerName"]');
-      if(sponsorEl)srvInfo.innerHTML=`Detected: <strong>${esc(sponsorEl.textContent.trim())}</strong> — enter its ID above`;
-      srvInfo.style.display='block';
-    }
-
+    if(!srvInput.value){const el=document.querySelector('[data-server-id]');if(el)srvInput.value=el.getAttribute('data-server-id')}
     if(srvInput.value){
-      srvInfo.innerHTML=`Auto-detected server ID: <strong>${esc(srvInput.value)}</strong>`;
+      srvInfo.innerHTML=`Auto-detected server: <strong>${esc(srvInput.value)}</strong>`;
       srvInfo.style.display='block';
     }
   }catch(e){}
@@ -243,7 +307,7 @@ window.stfGenerate=async function(){
   const resEl=document.getElementById('stf-result');
   errEl.innerHTML='';resEl.innerHTML='';
 
-  if(!srv){errEl.innerHTML='<div class="stf-err">Enter a server ID. Find one at speedtest.net/speedtest-servers-static.php or use the main site\'s search.</div>';return}
+  if(!srv){errEl.innerHTML='<div class="stf-err">Search for a server above, or enter a server ID manually.</div>';return}
   if(isNaN(dl)||isNaN(ul)||isNaN(ping)){errEl.innerHTML='<div class="stf-err">Fill in download, upload, and ping.</div>';return}
 
   const btn=document.getElementById('stf-gen-btn');
